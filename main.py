@@ -1,7 +1,7 @@
 from models.build import build_model
 import argparse
 from models.config import get_config
-
+import torch
 # def parse_option():
 #     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
 
@@ -46,11 +46,31 @@ def parse_option():
     return args, config
 
 
-def main(config):
+def main(configs):
     #data =
-    model = build_model(config)
-    print('model type: ', type(model))
-    #model.cuda()
+    # Create the dataloader
+    import torchvision.datasets as dset
+    import torchvision.transforms as transforms
+    image_size = 64
+    dataset = dset.ImageFolder(root=r'G:\crops',
+                               transform=transforms.Compose([
+                                   transforms.Resize(image_size),
+                                   transforms.CenterCrop(image_size),
+                                   transforms.ToTensor(),
+                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                               ]))
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
+                                             shuffle=True, num_workers=0)
+
+    #for epoch in range(configs.TRAIN.START_EPOCH, configs.TRAIN.EPOCHS):
+    for i, data in enumerate(dataloader, 0):
+        print("iter:{} | data: {}".format(i, data[0].size()))
+
+
+
+    # model = build_model(config)
+    # print('model type: ', type(model))
+    # #model.cuda()
 
 
 

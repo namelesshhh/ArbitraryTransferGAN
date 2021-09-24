@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import os
-dir = 'G:\Study\Data\单字\黄庭坚\金刚经R\crops'
+dir = 'G:\crops'
 f = open(os.path.join(dir, 'location.txt'), 'w+')
 for curDir, dirs, files in os.walk(os.path.join(dir, '0')):
     print("====================")
