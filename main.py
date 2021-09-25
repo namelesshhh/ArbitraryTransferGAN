@@ -2,6 +2,8 @@ from models.build import build_model
 import argparse
 from models.config import get_config
 import torch
+from k_means.k_means import k_means
+import numpy as np
 # def parse_option():
 #     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
 
@@ -63,8 +65,19 @@ def main(configs):
                                              shuffle=True, num_workers=0)
 
     #for epoch in range(configs.TRAIN.START_EPOCH, configs.TRAIN.EPOCHS):
+    sum_loss = 0
     for i, data in enumerate(dataloader, 0):
-        print("iter:{} | data: {}".format(i, data[0].size()))
+        data_real = data[0].view(64, -1)
+        print("iter:{} | data: {}".format(i, data_real.size()))
+        sum_loss  = sum_loss + k_means(data_real)
+
+    print("avg_loss loss = {}".format(sum_loss / len(dataloader)))
+
+    sum_loss_random = 0
+    for i in range(90):
+        data_real = 1.5 * np.random.randn(64, 64*64*3)
+        sum_loss_random = sum_loss_random + k_means(data_real)
+    print("avg_loss_random loss = {}".format(sum_loss_random/len(dataloader)))
 
 
 
