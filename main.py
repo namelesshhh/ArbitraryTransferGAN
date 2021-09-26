@@ -62,9 +62,9 @@ def main(configs):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
                                              shuffle=True, num_workers=0)
 
-    #for epoch in range(configs.TRAIN.START_EPOCH, configs.TRAIN.EPOCHS):
-    for i, data in enumerate(dataloader, 0):
-        print("iter:{} | data: {}".format(i, data[0].size()))
+    for epoch in range(configs.TRAIN.START_EPOCH, configs.TRAIN.EPOCHS):
+        for i, data in enumerate(dataloader, 0):
+            print("iter:{} | data: {}".format(i, data[0].size()))
 
 
 
