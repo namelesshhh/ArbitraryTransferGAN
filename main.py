@@ -2,6 +2,7 @@ from models.build import build_model
 import argparse
 from models.config import get_config
 import torch
+from models.build_model import build_model
 # def parse_option():
 #     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
 
@@ -46,8 +47,13 @@ def parse_option():
     return args, config
 
 
-def main(configs):
-    #data =
+def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch):
+    for i, data in enumerate(dataloader, 0):
+        print("epoch:{} | iter: {}".format(epoch, i))
+        common_feature = model_feaExa_style(data)
+
+
+def main(config):
     # Create the dataloader
     import torchvision.datasets as dset
     import torchvision.transforms as transforms
@@ -61,16 +67,18 @@ def main(configs):
                                ]))
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
                                              shuffle=True, num_workers=0)
-
-    for epoch in range(configs.TRAIN.START_EPOCH, configs.TRAIN.EPOCHS):
-        for i, data in enumerate(dataloader, 0):
-            print("iter:{} | data: {}".format(i, data[0].size()))
+    #Create the optimizer
+    optimizer_feaExa_style = None
 
 
+    #Create the model
+    #feature extraction
+    model_feaExa_style = build_model(config, "swin")
+    model_feaExa_content = None
 
-    # model = build_model(config)
-    # print('model type: ', type(model))
-    # #model.cuda()
+
+    #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
+    train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch = 1)
 
 
 
