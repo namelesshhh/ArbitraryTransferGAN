@@ -49,16 +49,17 @@ def parse_option():
 
 def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch):
     for i, data in enumerate(dataloader, 0):
+        real_data = data[0]
         print("epoch:{} | iter: {}".format(epoch, i))
-        common_feature = model_feaExa_style(data)
-
+        common_feature = model_feaExa_style(real_data)
+        print("commom feature size:{}".format((common_feature)))
 
 def main(config):
     # Create the dataloader
     import torchvision.datasets as dset
     import torchvision.transforms as transforms
-    image_size = 64
-    dataset = dset.ImageFolder(root=r'G:\crops',
+    image_size = config.DATA.IMG_SIZE
+    dataset = dset.ImageFolder(root='data/crops',
                                transform=transforms.Compose([
                                    transforms.Resize(image_size),
                                    transforms.CenterCrop(image_size),
@@ -75,7 +76,7 @@ def main(config):
     #feature extraction
     model_feaExa_style = build_model(config, "swin")
     model_feaExa_content = None
-
+    #print("model arguments:\n",format(model_feaExa_style))
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
     train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch = 1)
