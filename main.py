@@ -3,6 +3,7 @@ import argparse
 from models.config import get_config
 import torch
 from models.build_model import build_model
+from k_means_module.k_means import k_means, kmeans
 # def parse_option():
 #     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
 
@@ -52,7 +53,12 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
         real_data = data[0]
         print("epoch:{} | iter: {}".format(epoch, i))
         common_feature = model_feaExa_style(real_data)
-        print("commom feature size:{}".format((common_feature)))
+        print("commom feature size:{}".format(common_feature.size()))
+        resize = common_feature
+        print("resize size = {}".format(resize.size()))
+        loss_kmeans = kmeans(resize, 4, 1)
+        print("loss_kmeans = {}".format(loss_kmeans))
+        break
 
 def main(config):
     # Create the dataloader
@@ -66,7 +72,7 @@ def main(config):
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=4,
                                              shuffle=True, num_workers=0)
     #Create the optimizer
     optimizer_feaExa_style = None
