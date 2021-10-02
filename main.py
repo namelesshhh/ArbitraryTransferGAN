@@ -3,7 +3,7 @@ import argparse
 from models.config import get_config
 import torch
 from models.build_model import build_model
-from k_means_module.k_means import k_means, kmeans
+from k_means_module.k_means import kmeans
 # def parse_option():
 #     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
 
@@ -58,6 +58,7 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
         print("resize size = {}".format(resize.size()))
         loss_kmeans = kmeans(resize, 4, 1)
         print("loss_kmeans = {}".format(loss_kmeans))
+        #loss_kmeans.backward()
         break
 
 def main(config):
