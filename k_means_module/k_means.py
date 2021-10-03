@@ -35,11 +35,15 @@ def decorator_kmeans(func):
         # #print('classNum = {}'.format(classNum))
         #
         # loss = (classNum - 1) ** 2
-        print("label.size = {}".format(label.size()))
-        print('newLabels[0][0] = {}'.format(newLabels[0][0]))
+        #print("label.size = {}".format(label.size()))
+        #print('newLabels[0][0] = {}'.format(newLabels[0][0]))
         TrueLabels = torch.tensor(newLabels[0][0],dtype=float, requires_grad=True)
-        print("TrueLabels = {}".format(TrueLabels))
-        return label, TrueLabels.repeat(label.size())
+        #print("TrueLabels = {}".format(TrueLabels))
+        CenterTensor = c[newLabels[0][0]]
+        #print("Center tensor = {}".format(CenterTensor))
+        Center = CenterTensor.repeat(x.size()[0], 1)
+        #print("Center size = {}".format(Center.size()))
+        return label, Center
 
     return wrapFunc
 
@@ -55,11 +59,14 @@ def kmeans(x, ncluster, niter=10):
 
     N, D = x.size()
     c = x[torch.randperm(N)[:ncluster]] # init clusters at random
+    #print("c.size = {}".format(c[None, :, :].size()))
+    #print("x.size = {}".format(x[:, None, :].size()))
+    m = x[:, None, :] - c[None, :, :]
+    #print("m.size = {}".format(m.sum(-1).argmin(1).size()))
     for i in range(niter):
         # assign all pixels to the closest codebook element
         # .argmin(1) : 按列取最小值的下标,下面这行的意思是将x.size(0)个数据点归类到random选出的ncluster类
         a = ((x[:, None, :] - c[None, :, :])**2).sum(-1).argmin(1).double()
-        print(a)
         # move each codebook element to be the mean of the pixels that assigned to it
         # 计算每一类的迭代中心，然后重新把第一轮随机选出的聚类中心移到这一类的中心处
         c = torch.stack([x[a==k].mean(0) for k in range(ncluster)])
@@ -68,16 +75,22 @@ def kmeans(x, ncluster, niter=10):
         ndead = nanix.sum().item()
         #print('done step %d/%d, re-initialized %d dead clusters' % (i+1, niter, ndead))
         c[nanix] = x[torch.randperm(N)[:ndead]] # re-init dead clusters
+        #print("a.size = {}".format(a.size()))
+    #print("After: c.size = {}".format(c.size()))
     return c, a
 
 if __name__ == "__main__":
+    import torch.nn as nn
+
+
     input, target = kmeans(class1, 5, 1)
     print("tyype = {}".format(target.dtype))
     #print("mode = {}".format(kmeans(class1, 5, 1)))
-    import torch.nn as nn
+
     loss = nn.MSELoss()
-    output = loss(input, target)
+    output = loss(class1, target)
     output.backward()
-    print("loss = {}".format(loss))
+    print("loss = {}".format(output))
+
 
 

@@ -2,6 +2,7 @@ from models.build import build_model
 import argparse
 from models.config import get_config
 import torch
+import torch.nn as nn
 from models.build_model import build_model
 from k_means_module.k_means import kmeans
 # def parse_option():
@@ -47,18 +48,36 @@ def parse_option():
 
     return args, config
 
+def param_visual(model):
+    """
+    :param model: the model that you want to visual it paramters
+    :return: void
+    """
+    for name, parms in model.named_parameters():
+        print('-->name:', name)
+        print('-->para:', parms)
+        print('-->grad_requirs:', parms.requires_grad)
+        print('-->grad_value:', parms.grad)
+        print("==="*10)
+
 
 def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch):
     for i, data in enumerate(dataloader, 0):
         real_data = data[0]
         print("epoch:{} | iter: {}".format(epoch, i))
+
+        #Style feature extract module
         common_feature = model_feaExa_style(real_data)
         print("commom feature size:{}".format(common_feature.size()))
-        resize = common_feature
-        print("resize size = {}".format(resize.size()))
-        loss_kmeans = kmeans(resize, 4, 1)
-        print("loss_kmeans = {}".format(loss_kmeans))
-        #loss_kmeans.backward()
+        label, Center = kmeans(common_feature, 6, 10)
+        loss_MSE = nn.MSELoss()
+        loss_classify = loss_MSE(common_feature, Center)
+        loss_classify.backward()
+        print("loss_classify = {}".format(loss_classify))
+
+        #Style feature active fusion module
+
+
         break
 
 def main(config):
@@ -73,7 +92,7 @@ def main(config):
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=4,
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=8,
                                              shuffle=True, num_workers=0)
     #Create the optimizer
     optimizer_feaExa_style = None
