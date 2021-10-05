@@ -68,6 +68,7 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
 
         #Style feature extract module
         common_feature = model_feaExa_style(real_data)
+
         print("commom feature size:{}".format(common_feature.size()))
         label, Center = kmeans(common_feature, 6, 10)
         loss_MSE = nn.MSELoss()

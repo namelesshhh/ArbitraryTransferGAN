@@ -61,22 +61,26 @@ class MultiHeadAttention(nn.Module):
         output = self.out(concat)
 
         return output
-embed_dim = 100
-num_heads = 10
-query = torch.tensor(torch.randn([64, 1000], requires_grad=True))
+# embed_dim = 100
+# num_heads = 10
+# query = torch.tensor(torch.randn([64, 10], requires_grad=True))
 # key = value = query
 # multihead_attn = nn.MultiheadAttention(embed_dim, num_heads)
 # attn_output, attn_output_weights = multihead_attn(query, key, value)
 # print(attn_output)
 
-embed = nn.Embedding(64, 1000)
-print(embed.weight.size)
-#embedding = embed(query)
-#print(embedding.size())
-# def active_feature_fusion(content_feature, style_feature):
-#     #first: embedding
-#     query = content_feature
-#     #seconde:Convert to QKV matrix
-#     multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
-#     attn_output, attn_output_weights = multihead_attn(query, key, value)
-#     return attn_output
+
+def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads = 10, ):
+    B = style_feature.size()[0] #Batch Size
+
+    query = content_feature.repeat(B + 1)
+    key = value = style_feature
+    #seconde:Convert to QKV matrix
+    multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
+    attn_output, attn_output_weights = multihead_attn(query, key, value)
+    return attn_output
+
+if __name__ == "__main__":
+    content_feature = torch.randn([1, 1000] ,dtype=float, requires_grad=True)
+    style_feature = torch.randn([64, 1000] ,dtype=float, requires_grad=True)
+    active_feature_fusion(content_feature, style_feature, 1000, )
