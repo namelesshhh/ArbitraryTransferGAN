@@ -37,7 +37,7 @@ def decorator_kmeans(func):
         # loss = (classNum - 1) ** 2
         #print("label.size = {}".format(label.size()))
         #print('newLabels[0][0] = {}'.format(newLabels[0][0]))
-        TrueLabels = torch.tensor(newLabels[0][0],dtype=float, requires_grad=True)
+        #TrueLabels = torch.tensor(newLabels[0][0],dtype=float, requires_grad=True)
         #print("TrueLabels = {}".format(TrueLabels))
         CenterTensor = c[newLabels[0][0]]
         #print("Center tensor = {}".format(CenterTensor))

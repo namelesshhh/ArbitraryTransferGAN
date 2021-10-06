@@ -68,8 +68,9 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
         print("epoch:{} | iter: {}".format(epoch, i))
 
         #Style feature extract module
-        common_feature = model_feaExa_style(real_data)
-
+        common_feature = model_feaExa_style(real_data) # B L C
+        common_feature_size = common_feature.size()
+        common_feature = torch.flatten(common_feature, start_dim=1) # B L*C
         print("commom feature size:{}".format(common_feature.size()))
         label, Center = kmeans(common_feature, 6, 10)
         loss_MSE = nn.MSELoss()
@@ -78,12 +79,12 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
         print("loss_classify = {}".format(loss_classify))
 
         #Style feature active fusion module
-        common_feature = common_feature[:, None, :]
-        content_feature = torch.randn([1, 1,1000] , requires_grad=True)
-        fusion_feature = active_feature_fusion(content_feature, common_feature, config.MODEL.NUM_CLASSES, 10)
-
+        common_feature = common_feature.reshape(*common_feature_size)
+        content_feature = torch.randn([1, 49,1024] , requires_grad=True)
+        fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
+        print("fusion_feature size = {}".format(fusion_feature.size()))
         #Swin-Unet
-
+        #TODO 融合SWIN-UNET的bottle-neck 与 fusion-feature
 
         break
 
