@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from models.build_model import build_model
 from k_means_module.k_means import kmeans
+from models.active_feature_fusion import active_feature_fusion
 # def parse_option():
 #     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
 
@@ -77,6 +78,11 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
         print("loss_classify = {}".format(loss_classify))
 
         #Style feature active fusion module
+        common_feature = common_feature[:, None, :]
+        content_feature = torch.randn([1, 1,1000] , requires_grad=True)
+        fusion_feature = active_feature_fusion(content_feature, common_feature, config.MODEL.NUM_CLASSES, 10)
+
+        #Swin-Unet
 
 
         break

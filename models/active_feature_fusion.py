@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import math
 import torch.nn.functional as F
-
+"""
 def attention(q, k, v, d_k, mask=None, dropout=None):
     scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)
     if mask is not None:
@@ -61,26 +61,28 @@ class MultiHeadAttention(nn.Module):
         output = self.out(concat)
 
         return output
-# embed_dim = 100
-# num_heads = 10
-# query = torch.tensor(torch.randn([64, 10], requires_grad=True))
-# key = value = query
-# multihead_attn = nn.MultiheadAttention(embed_dim, num_heads)
-# attn_output, attn_output_weights = multihead_attn(query, key, value)
-# print(attn_output)
-
-
+"""
 def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads = 10, ):
-    B = style_feature.size()[0] #Batch Size
+    """
+    :param content_feature: (B_c, 1, trasnformer output size)
+    :param style_feature: (B_s, 1, trasnformer output size)
+    :param embed_dim: The same as trasnformer output size
+    :param num_heads: multihead attention head numbers
+    :return: The features obtained by the active fusion of content features and style features
+    """
+    B_s = style_feature.size()[0] #Batch Size
+    B_c = content_feature.size()[0]
+    query = content_feature.repeat(B_s + B_c, 1, 1)
+    key = value = torch.cat((content_feature, style_feature), 0)
 
-    query = content_feature.repeat(B + 1)
-    key = value = style_feature
-    #seconde:Convert to QKV matrix
     multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
     attn_output, attn_output_weights = multihead_attn(query, key, value)
     return attn_output
 
 if __name__ == "__main__":
-    content_feature = torch.randn([1, 1000] ,dtype=float, requires_grad=True)
-    style_feature = torch.randn([64, 1000] ,dtype=float, requires_grad=True)
-    active_feature_fusion(content_feature, style_feature, 1000, )
+    content_feature = torch.randn([1, 1,100] , requires_grad=True)
+    style_feature = torch.randn([2, 1, 100] , requires_grad=True)
+    out = active_feature_fusion(content_feature, style_feature, 100, 10)
+    print(out)
+
+
