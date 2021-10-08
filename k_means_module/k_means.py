@@ -54,7 +54,7 @@ def kmeans(x, ncluster, niter=10):
     :param x: torch.tensor(data_num,data_dim)
     :param ncluster: The number of clustering for data_num
     :param niter: Number of iterations for kmeans
-    :return:label of data, and turth label that is produced by the biggest bunch
+    :return:label of data, and turth data center that is produced by the biggest bunch
     """
 
     N, D = x.size()
