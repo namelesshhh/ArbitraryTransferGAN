@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/ArbitraryTransfer.iml" filepath="$PROJECT_DIR$/.idea/ArbitraryTransfer.iml" />
+      <module fileurl="file://G:/Study/GenWordPic/.idea/GenWordPic.iml" filepath="G:/Study/GenWordPic/.idea/GenWordPic.iml" />
     </modules>
   </component>
 </project>

@@ -62,7 +62,7 @@ def param_visual(model):
         print("==="*10)
 
 
-def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch):
+def train_one_epoch(config, model_feaExa_style, swin_unet,dataloader_style,dataloader_content, optimizer_feaExa_style, epoch):
     for i, data in enumerate(dataloader, 0):
         real_data = data[0]
         print("epoch:{} | iter: {}".format(epoch, i))
@@ -70,8 +70,9 @@ def train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_sty
         #Style feature extract module
         common_feature = model_feaExa_style(real_data) # B L C
         common_feature_size = common_feature.size()
+        print("Before flatten common feature size:{}".format(common_feature.size()))
         common_feature = torch.flatten(common_feature, start_dim=1) # B L*C
-        print("commom feature size:{}".format(common_feature.size()))
+        print("After flatten common feature size:{}".format(common_feature.size()))
         label, Center = kmeans(common_feature, 6, 10)
         loss_MSE = nn.MSELoss()
         loss_classify = loss_MSE(common_feature, Center)
@@ -109,13 +110,15 @@ def main(config):
     #Create the model
     #feature extraction
     model_feaExa_style = build_model(config, "swin")
-    model_feaExa_content = None
+    model_feaExa_content = build_model(config, "swin_unet")
     #print("model arguments:\n",format(model_feaExa_style))
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
-    train_one_epoch(config, model_feaExa_style, dataloader, optimizer_feaExa_style, epoch = 1)
-
-
+    train_one_epoch(config, model_feaExa_style,
+                    model_feaExa_content,
+                    dataloader,
+                    optimizer_feaExa_style,
+                    epoch = 1)
 
 if __name__ == '__main__':
     _, args = parse_option()

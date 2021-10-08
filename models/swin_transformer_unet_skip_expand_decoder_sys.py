@@ -692,7 +692,7 @@ class SwinTransformerSys(nn.Module):
         return {'relative_position_bias_table'}
 
     #Encoder and Bottleneck
-    def forward_features(self, x):
+    def forward_features(self, x, style_feature):
         x = self.patch_embed(x)
         if self.ape:
             x = x + self.absolute_pos_embed
@@ -704,8 +704,10 @@ class SwinTransformerSys(nn.Module):
             x = layer(x)
 
         x = self.norm(x)  # B L C
-  
-        return x, x_downsample
+        #content feature and style_feature fusion
+        #x is content_feature
+        fusion_feature = x + style_feature
+        return fusion_feature, x_downsample
 
     #Dencoder and Skip connection
     def forward_up_features(self, x, x_downsample):
@@ -734,8 +736,8 @@ class SwinTransformerSys(nn.Module):
             
         return x
 
-    def forward(self, x):
-        x, x_downsample = self.forward_features(x)
+    def forward(self, x, style_feature):
+        x, x_downsample = self.forward_features(x, style_feature)
         x = self.forward_up_features(x,x_downsample)
         x = self.up_x4(x)
 
