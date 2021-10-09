@@ -94,14 +94,23 @@ def main(config):
     import torchvision.datasets as dset
     import torchvision.transforms as transforms
     image_size = config.DATA.IMG_SIZE
-    dataset = dset.ImageFolder(root='data/crops',
+    dataset_style = dset.ImageFolder(root='data/crops',
                                transform=transforms.Compose([
                                    transforms.Resize(image_size),
                                    transforms.CenterCrop(image_size),
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=8,
+    dataset_content = dset.ImageFolder(root='data/WordImage',
+                               transform=transforms.Compose([
+                                   transforms.Resize(image_size),
+                                   transforms.CenterCrop(image_size),
+                                   transforms.ToTensor(),
+                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                               ]))
+    dataloader_style = torch.utils.data.DataLoader(dataset_style, batch_size=8,
+                                             shuffle=True, num_workers=0)
+    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=8,
                                              shuffle=True, num_workers=0)
     #Create the optimizer
     optimizer_feaExa_style = None
