@@ -64,8 +64,8 @@ class MultiHeadAttention(nn.Module):
 """
 def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads = 10, ):
     """
-    :param content_feature: (B_c, 1, trasnformer output size)
-    :param style_feature: (B_s, 1, trasnformer output size)
+    :param content_feature: (B_c, L, trasnformer output size)
+    :param style_feature: (B_s, L, trasnformer output size)
     :param embed_dim: The same as trasnformer output size
     :param num_heads: multihead attention head numbers
     :return: The features obtained by the active fusion of content features and style features
@@ -77,12 +77,14 @@ def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads =
 
     multihead_attn = nn.MultiheadAttention(embed_dim, num_heads ,batch_first=True)
     attn_output, attn_output_weights = multihead_attn(query, key, value)
+    #TODO 从第0维度开始堆叠相加attn_output
+    attn_output = torch.sum(attn_output, 0)
     return attn_output
 
 if __name__ == "__main__":
     content_feature = torch.randn([1, 1,100] , requires_grad=True)
     style_feature = torch.randn([2, 1, 100] , requires_grad=True)
     out = active_feature_fusion(content_feature, style_feature, 100, 10)
-    print(out)
+    print(out.size())
 
 

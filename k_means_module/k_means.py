@@ -37,7 +37,7 @@ def decorator_kmeans(func):
         # loss = (classNum - 1) ** 2
         #print("label.size = {}".format(label.size()))
         #print('newLabels[0][0] = {}'.format(newLabels[0][0]))
-        TrueLabels = torch.tensor(newLabels[0][0],dtype=float, requires_grad=True)
+        #TrueLabels = torch.tensor(newLabels[0][0],dtype=float, requires_grad=True)
         #print("TrueLabels = {}".format(TrueLabels))
         CenterTensor = c[newLabels[0][0]]
         #print("Center tensor = {}".format(CenterTensor))
@@ -54,7 +54,7 @@ def kmeans(x, ncluster, niter=10):
     :param x: torch.tensor(data_num,data_dim)
     :param ncluster: The number of clustering for data_num
     :param niter: Number of iterations for kmeans
-    :return:label of data, and turth label that is produced by the biggest bunch
+    :return:label of data, and turth data center that is produced by the biggest bunch
     """
 
     N, D = x.size()
