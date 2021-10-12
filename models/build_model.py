@@ -53,7 +53,12 @@ def build_model(config, type = "swin"):
                                 ape=config.MODEL.SWIN.APE,
                                 patch_norm=config.MODEL.SWIN.PATCH_NORM,
                                 use_checkpoint=config.TRAIN.USE_CHECKPOINT)
+
     elif type == "swin_unet":
         model = SwinUnet(config, img_size=64*64)
+
+    elif type == "discriminator":
+        #TODO discriminator
+        pass
 
     return model

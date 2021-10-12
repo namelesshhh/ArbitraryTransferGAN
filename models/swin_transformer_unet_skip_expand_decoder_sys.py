@@ -720,7 +720,7 @@ class SwinTransformerSys(nn.Module):
                 x = layer_up(x)
 
         x = self.norm_up(x)  # B L C
-  
+
         return x
 
     def up_x4(self, x):

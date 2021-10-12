@@ -62,32 +62,39 @@ def param_visual(model):
         print("==="*10)
 
 
-def train_one_epoch(config, model_feaExa_style, swin_unet,dataloader_style,dataloader_content, optimizer_feaExa_style, epoch):
-    for i, data in enumerate(dataloader, 0):
-        real_data = data[0]
-        print("epoch:{} | iter: {}".format(epoch, i))
+def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator ,dataloader_style,dataloader_content, optimizer_feaExa_style, epoch):
+    for i_c , data_s in enumerate(dataloader_content, 0):
+        data_c = data_c[0]
+        for i_s, data_s in enumerate(dataloader_style, 0):
+            data_s = data_s[0]
+            print("epoch:{} | iter_content: {} | iter_style: {}".format(epoch, i_c, i_s))
+            #Style feature extract module
+            common_feature = model_feaExa_style(data_s) # B L C
+            common_feature_size = common_feature.size()
+            print("Before flatten common feature size:{}".format(common_feature.size()))
+            common_feature = torch.flatten(common_feature, start_dim=1) # B L*C
+            print("After flatten common feature size:{}".format(common_feature.size()))
+            label, Center = kmeans(common_feature, 6, 10)
+            loss_MSE = nn.MSELoss()
+            loss_classify = loss_MSE(common_feature, Center)
+            loss_classify.backward()
+            print("loss_classify = {}".format(loss_classify))
 
-        #Style feature extract module
-        common_feature = model_feaExa_style(real_data) # B L C
-        common_feature_size = common_feature.size()
-        print("Before flatten common feature size:{}".format(common_feature.size()))
-        common_feature = torch.flatten(common_feature, start_dim=1) # B L*C
-        print("After flatten common feature size:{}".format(common_feature.size()))
-        label, Center = kmeans(common_feature, 6, 10)
-        loss_MSE = nn.MSELoss()
-        loss_classify = loss_MSE(common_feature, Center)
-        loss_classify.backward()
-        print("loss_classify = {}".format(loss_classify))
+            #Style feature active fusion module
+            common_feature = common_feature.reshape(*common_feature_size)
+            content_feature = torch.randn([1, 49,1024] , requires_grad=True)
+            fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
+            print("fusion_feature size = {}".format(fusion_feature.size()))
+            #Swin-Unet
+            #TODO 融合SWIN-UNET的bottle-neck 与 fusion-feature
+            fake_image = swin_unet(data_c, data_s)
 
-        #Style feature active fusion module
-        common_feature = common_feature.reshape(*common_feature_size)
-        content_feature = torch.randn([1, 49,1024] , requires_grad=True)
-        fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
-        print("fusion_feature size = {}".format(fusion_feature.size()))
-        #Swin-Unet
-        #TODO 融合SWIN-UNET的bottle-neck 与 fusion-feature
 
-        break
+            #Discriminator
+            result_d = discriminator(fake_image)
+
+
+            break
 
 def main(config):
     # Create the dataloader
@@ -101,6 +108,7 @@ def main(config):
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
+
     dataset_content = dset.ImageFolder(root='data/WordImage',
                                transform=transforms.Compose([
                                    transforms.Resize(image_size),
@@ -123,11 +131,11 @@ def main(config):
     #print("model arguments:\n",format(model_feaExa_style))
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
-    train_one_epoch(config, model_feaExa_style,
-                    model_feaExa_content,
-                    dataloader,
-                    optimizer_feaExa_style,
-                    epoch = 1)
+    # train_one_epoch(config, model_feaExa_style,
+    #                 model_feaExa_content,
+    #                 dataloader,
+    #                 optimizer_feaExa_style,
+    #                 epoch = 1)
 
 if __name__ == '__main__':
     _, args = parse_option()
