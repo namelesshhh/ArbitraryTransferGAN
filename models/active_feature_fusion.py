@@ -75,7 +75,7 @@ def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads =
     query = content_feature.repeat(B_s + B_c, 1, 1)
     key = value = torch.cat((content_feature, style_feature), 0)
 
-    multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
+    multihead_attn = nn.MultiheadAttention(embed_dim, num_heads ,batch_first=True)
     attn_output, attn_output_weights = multihead_attn(query, key, value)
     return attn_output
 
