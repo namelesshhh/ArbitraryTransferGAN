@@ -1,4 +1,3 @@
-from models.build import build_model
 import argparse
 from models.config import get_config
 import torch
@@ -91,7 +90,7 @@ def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator,   #mod
         data_c = data_c[0]
         for i_s, data_s in enumerate(dataloader_style, 0):
             data_s = data_s[0].to(device)
-            print("epoch:{} | iter_content: {} | iter_style: {}".format(epoch, i_c, i_s))
+
             #Style feature extract module
             common_feature = model_feaExa_style(data_s) # B L C
             common_feature_size = common_feature.size()
@@ -126,8 +125,8 @@ def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator,   #mod
             errD_real = loss_BCE(data_s, real_label)
             errD_fake = loss_BCE(fake_image, fake_label)
 
-
-
+            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
+                                                                                 , i_s, len(dataloader_style), D_real, D_fake))
 
 
             break
