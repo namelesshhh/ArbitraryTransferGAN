@@ -6,8 +6,14 @@ import torch.nn as nn
 from models.build_model import build_model
 from k_means_module.k_means import kmeans
 from models.active_feature_fusion import active_feature_fusion
-# def parse_option():
-#     parser = argparse.ArgumentParser('Swin-Transformer as a encoder', add_help=False)
+
+
+#param
+ngpu = 0
+device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+real_label = 1
+fake_label = 0
+
 
 def parse_option():
     parser = argparse.ArgumentParser('Swin Transformer training and evaluation script', add_help=False)
@@ -62,11 +68,29 @@ def param_visual(model):
         print("==="*10)
 
 
-def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator ,dataloader_style,dataloader_content, optimizer_feaExa_style, epoch):
+def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator,   #model
+                    dataloader_style, dataloader_content,                   #dataloader
+                    optimizer_feaExa_style,                                 #optimizer
+                    loss_MSE, loss_BCE,                                     #loss function
+                    epoch):                                                 #others
+    """
+
+    :param config: configurations for training seting
+    :param model_feaExa_style: style feature extraction model
+    :param swin_unet: content feature extraction and image generator
+    :param discriminator:  discriminator for real and fake image
+    :param dataloader_style:  a dataloader for style
+    :param dataloader_content:  a dataloader for content
+    :param optimizer_feaExa_style:  optimizer for cluster and style feature extraction
+    :param loss_MSE: well
+    :param loss_BCE: well
+    :param epoch: well
+    :return: void
+    """
     for i_c , data_s in enumerate(dataloader_content, 0):
         data_c = data_c[0]
         for i_s, data_s in enumerate(dataloader_style, 0):
-            data_s = data_s[0]
+            data_s = data_s[0].to(device)
             print("epoch:{} | iter_content: {} | iter_style: {}".format(epoch, i_c, i_s))
             #Style feature extract module
             common_feature = model_feaExa_style(data_s) # B L C
@@ -75,7 +99,7 @@ def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator ,datalo
             common_feature = torch.flatten(common_feature, start_dim=1) # B L*C
             print("After flatten common feature size:{}".format(common_feature.size()))
             label, Center = kmeans(common_feature, 6, 10)
-            loss_MSE = nn.MSELoss()
+
             loss_classify = loss_MSE(common_feature, Center)
             loss_classify.backward()
             print("loss_classify = {}".format(loss_classify))
@@ -85,13 +109,25 @@ def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator ,datalo
             content_feature = torch.randn([1, 49,1024] , requires_grad=True)
             fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
             print("fusion_feature size = {}".format(fusion_feature.size()))
+
             #Swin-Unet
-            #TODO 融合SWIN-UNET的bottle-neck 与 fusion-feature
             fake_image = swin_unet(data_c, data_s)
 
 
             #Discriminator
-            result_d = discriminator(fake_image)
+            size_real = data_s.size(0)
+            size_fake = fake_image.size(0)
+            label_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
+            label_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
+
+            D_fake = discriminator(fake_image) #B * 1
+            D_real = discriminator(data_s)
+
+            errD_real = loss_BCE(data_s, real_label)
+            errD_fake = loss_BCE(fake_image, fake_label)
+
+
+
 
 
             break
@@ -123,6 +159,10 @@ def main(config):
     #Create the optimizer
     optimizer_feaExa_style = None
 
+    #Create the Loss function
+    loss_BCE = nn.BCELoss()
+    loss_MSE = nn.MSELoss()
+
 
     #Create the model
     #feature extraction
@@ -130,12 +170,17 @@ def main(config):
     model_feaExa_content = build_model(config, "swin_unet")
     #print("model arguments:\n",format(model_feaExa_style))
 
+    #Discriminator
+    discriminator = build_model(config, "dis")
+
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
-    # train_one_epoch(config, model_feaExa_style,
-    #                 model_feaExa_content,
-    #                 dataloader,
-    #                 optimizer_feaExa_style,
-    #                 epoch = 1)
+    train_one_epoch(config,
+                    model_feaExa_style, model_feaExa_content,       #model
+                    dataloader_style, dataloader_content,           #dataloader
+                    optimizer_feaExa_style,                         #optimizer
+                    loss_MSE,  loss_BCE,                            #loss function
+                    epoch = 1                                       #others
+                    )
 
 if __name__ == '__main__':
     _, args = parse_option()
