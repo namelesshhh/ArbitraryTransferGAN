@@ -26,11 +26,11 @@ class SwinUnet(nn.Module):
                                 patch_norm=config.MODEL.SWIN.PATCH_NORM,
                                 use_checkpoint=config.TRAIN.USE_CHECKPOINT)
 
-    def forward(self, x):
+    def forward(self, x, common_feature):
         #if channel = 1,
         if x.size()[1] == 1:
             x = x.repeat(1,3,1,1)
-        logits = self.swin_unet(x)
+        logits = self.swin_unet(x, common_feature)
         return logits
 
 

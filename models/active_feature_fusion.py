@@ -72,19 +72,26 @@ def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads =
     """
     B_s = style_feature.size()[0] #Batch Size
     B_c = content_feature.size()[0]
-    query = content_feature.repeat(B_s + B_c, 1, 1)
-    key = value = torch.cat((content_feature, style_feature), 0)
+    multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
 
-    multihead_attn = nn.MultiheadAttention(embed_dim, num_heads ,batch_first=True)
-    attn_output, attn_output_weights = multihead_attn(query, key, value)
-    #TODO 从第0维度开始堆叠相加attn_output
-    attn_output = torch.sum(attn_output, 0)
-    return attn_output
+    list_attn = []
+    for i in range(B_c):
+        content = content_feature[i]
+        content = content[None, :, :]
+        query = content.repeat(B_s + 1, 1, 1)
+        key = value = torch.cat((content, style_feature), 0)
+        attn_output, attn_output_weights = multihead_attn(query, key, value)
+        attn_output = torch.sum(attn_output, 0)
+        #print("fusion_feature = {} | attn_output = {}".format(fusion_feature.size(), attn_output.size()))
+        list_attn.append(attn_output)
+    fusion_feature = torch.stack(list_attn, 0)
+
+    return fusion_feature
 
 if __name__ == "__main__":
-    content_feature = torch.randn([1, 1,100] , requires_grad=True)
-    style_feature = torch.randn([2, 1, 100] , requires_grad=True)
-    out = active_feature_fusion(content_feature, style_feature, 100, 10)
+    content_feature = torch.randn([16, 49,1024] , requires_grad=True)
+    style_feature = torch.randn([16, 49, 1024] , requires_grad=True)
+    out = active_feature_fusion(content_feature, style_feature, style_feature.size()[-1], 8)
     print(out.size())
 
 

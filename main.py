@@ -67,7 +67,8 @@ def param_visual(model):
         print("==="*10)
 
 
-def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator,   #model
+def train_one_epoch(config,
+                    model_feaExa_style, swin_unet, discriminator,           #model
                     dataloader_style, dataloader_content,                   #dataloader
                     optimizer_feaExa_style,                                 #optimizer
                     loss_MSE, loss_BCE,                                     #loss function
@@ -86,7 +87,7 @@ def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator,   #mod
     :param epoch: well
     :return: void
     """
-    for i_c , data_s in enumerate(dataloader_content, 0):
+    for i_c , data_c in enumerate(dataloader_content, 0):
         data_c = data_c[0]
         for i_s, data_s in enumerate(dataloader_style, 0):
             data_s = data_s[0].to(device)
@@ -105,12 +106,9 @@ def train_one_epoch(config, model_feaExa_style, swin_unet, discriminator,   #mod
 
             #Style feature active fusion module
             common_feature = common_feature.reshape(*common_feature_size)
-            content_feature = torch.randn([1, 49,1024] , requires_grad=True)
-            fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
-            print("fusion_feature size = {}".format(fusion_feature.size()))
 
             #Swin-Unet
-            fake_image = swin_unet(data_c, data_s)
+            fake_image = swin_unet(data_c, common_feature)
 
 
             #Discriminator
@@ -151,9 +149,9 @@ def main(config):
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
-    dataloader_style = torch.utils.data.DataLoader(dataset_style, batch_size=8,
+    dataloader_style = torch.utils.data.DataLoader(dataset_style, batch_size=4,
                                              shuffle=True, num_workers=0)
-    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=8,
+    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=4,
                                              shuffle=True, num_workers=0)
     #Create the optimizer
     optimizer_feaExa_style = None
@@ -166,19 +164,19 @@ def main(config):
     #Create the model
     #feature extraction
     model_feaExa_style = build_model(config, "swin")
-    model_feaExa_content = build_model(config, "swin_unet")
+    swin_unet = build_model(config, "swin_unet")
     #print("model arguments:\n",format(model_feaExa_style))
 
     #Discriminator
-    discriminator = build_model(config, "dis")
+    discriminator = build_model(config, "discriminator")
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
     train_one_epoch(config,
-                    model_feaExa_style, model_feaExa_content,       #model
-                    dataloader_style, dataloader_content,           #dataloader
-                    optimizer_feaExa_style,                         #optimizer
-                    loss_MSE,  loss_BCE,                            #loss function
-                    epoch = 1                                       #others
+                    model_feaExa_style, swin_unet, discriminator,                   #model
+                    dataloader_style, dataloader_content,                           #dataloader
+                    optimizer_feaExa_style,                                         #optimizer
+                    loss_MSE,  loss_BCE,                                            #loss function
+                    epoch = 1                                                       #others
                     )
 
 if __name__ == '__main__':

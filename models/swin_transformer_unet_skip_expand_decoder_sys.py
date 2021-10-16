@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from einops import rearrange
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-
+from models.active_feature_fusion import active_feature_fusion
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -692,7 +692,7 @@ class SwinTransformerSys(nn.Module):
         return {'relative_position_bias_table'}
 
     #Encoder and Bottleneck
-    def forward_features(self, x, style_feature):
+    def forward_features(self, x, common_feature):
         x = self.patch_embed(x)
         if self.ape:
             x = x + self.absolute_pos_embed
@@ -703,11 +703,19 @@ class SwinTransformerSys(nn.Module):
             x_downsample.append(x)
             x = layer(x)
 
-        x = self.norm(x)  # B L C
+
+        content_feature = self.norm(x)  # B L C
         #content feature and style_feature fusion
-        #x is content_feature
-        fusion_feature = x + style_feature
+        common_feature_size = common_feature.size()
+        print("hello?" * 3)
+        print("content_feature: {} | common_feature: {}".format(content_feature.size(), common_feature.size()))
+        fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
+
+
         return fusion_feature, x_downsample
+
+
+
 
     #Dencoder and Skip connection
     def forward_up_features(self, x, x_downsample):
@@ -737,6 +745,7 @@ class SwinTransformerSys(nn.Module):
         return x
 
     def forward(self, x, style_feature):
+
         x, x_downsample = self.forward_features(x, style_feature)
         x = self.forward_up_features(x,x_downsample)
         x = self.up_x4(x)
