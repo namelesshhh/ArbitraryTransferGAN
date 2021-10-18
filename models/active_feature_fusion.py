@@ -59,7 +59,6 @@ class MultiHeadAttention(nn.Module):
 
 
         output = self.out(concat)
-
         return output
 """
 def active_feature_fusion(content_feature, style_feature, embed_dim, num_heads = 10, ):

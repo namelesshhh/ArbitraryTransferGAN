@@ -109,7 +109,7 @@ def train_one_epoch(config,
 
             #Swin-Unet
             fake_image = swin_unet(data_c, common_feature)
-
+            print("fake_image size = {}".format(fake_image.size()))
 
             #Discriminator
             size_real = data_s.size(0)
@@ -117,17 +117,18 @@ def train_one_epoch(config,
             label_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
             label_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
 
-            D_fake = discriminator(fake_image) #B * 1
-            D_real = discriminator(data_s)
+            # D_fake = discriminator(fake_image) #B * 1
+            # D_real = discriminator(data_s)
+            #
+            # errD_real = loss_BCE(data_s, real_label)
+            # errD_fake = loss_BCE(fake_image, fake_label)
 
-            errD_real = loss_BCE(data_s, real_label)
-            errD_fake = loss_BCE(fake_image, fake_label)
-
-            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
-                                                                                 , i_s, len(dataloader_style), D_real, D_fake))
+            #print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
+            #                                                                     , i_s, len(dataloader_style), D_real, D_fake))
 
 
             break
+        break
 
 def main(config):
     # Create the dataloader

@@ -707,7 +707,6 @@ class SwinTransformerSys(nn.Module):
         content_feature = self.norm(x)  # B L C
         #content feature and style_feature fusion
         common_feature_size = common_feature.size()
-        print("hello?" * 3)
         print("content_feature: {} | common_feature: {}".format(content_feature.size(), common_feature.size()))
         fusion_feature = active_feature_fusion(content_feature, common_feature, common_feature_size[-1], 8)
 
@@ -747,7 +746,7 @@ class SwinTransformerSys(nn.Module):
     def forward(self, x, style_feature):
 
         x, x_downsample = self.forward_features(x, style_feature)
-        x = self.forward_up_features(x,x_downsample)
+        x = self.forward_up_features(x, x_downsample)
         x = self.up_x4(x)
 
         return x
