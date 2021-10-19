@@ -116,29 +116,40 @@ def train_one_epoch(config,
             feature_truthimg = FeatureExtractor(data_s)
             print("feature_fakeimg size = {} | feature_truthimg size = {}".format(feature_fakeimg.size(), feature_truthimg.size()))
 
-            B = []
+            B_fake = []
             for i_f in range(feature_fakeimg.size()[0]):
-                B_f = []
-                B_f.append(feature_truthimg[i_f * 2])
-                B_f.append(feature_fakeimg[i_f])
-                B_f.append(feature_truthimg[i_f * 2 + 1])
-                T_B_f = torch.cat(B_f, 0)
-                B.append(T_B_f)
-            new_B = torch.stack(B, 0)
-            print("new_B.size() = {}".format(new_B.size()))
+                B_tmp = []
+                B_tmp.append(feature_truthimg[i_f * 2])
+                B_tmp.append(feature_fakeimg[i_f])
+                B_tmp.append(feature_truthimg[i_f * 2 + 1])
+                T_B_f = torch.cat(B_tmp, 0)
+                B_fake.append(T_B_f)
+            new_fakeimg = torch.stack(B_fake, 0)
+
+            B_truth = []
+            for i_t in range(feature_truthimg.size()[0] - 2):
+                B_tmp = []
+                B_tmp.append(feature_truthimg[i_t])
+                B_tmp.append(feature_truthimg[i_t + 1])
+                B_tmp.append(feature_truthimg[i_t + 2])
+                T_B_t = torch.cat(B_tmp, 0)
+                B_truth.append(T_B_t)
+            new_truthimg = torch.stack(B_truth, 0)
+
+            print("new_fakeimg size = {} | new_truthimg = {}".format(new_fakeimg.size(), new_truthimg.size()))
             size_real = data_s.size(0)
             size_fake = fake_image.size(0)
             labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
             labels_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
 
-            # D_fake = discriminator(fake_image) #B * 1
-            # D_real = discriminator(data_s)
-            # print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
-            # errD_real = loss_BCE(D_real, labels_real)
-            # errD_fake = loss_BCE(D_fake, labels_fake)
-            #
-            # print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
-            #                                                                     , i_s, len(dataloader_style), D_real, D_fake))
+            D_fake = discriminator(new_fakeimg) #B * 1
+            D_real = discriminator(new_truthimg)
+            print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
+            errD_real = loss_BCE(D_real, labels_real)
+            errD_fake = loss_BCE(D_fake, labels_fake)
+
+            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
+                                                                                , i_s, len(dataloader_style), D_real, D_fake))
 
 
             break
@@ -166,7 +177,7 @@ def main(config):
                                ]))
     dataloader_style = torch.utils.data.DataLoader(dataset_style, batch_size=4,
                                              shuffle=True, num_workers=0)
-    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=4,
+    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=2,
                                              shuffle=True, num_workers=0)
     #Create the optimizer
     optimizer_feaExa_style = None
