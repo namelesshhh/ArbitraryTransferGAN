@@ -68,16 +68,17 @@ def param_visual(model):
 
 
 def train_one_epoch(config,
-                    model_feaExa_style, swin_unet, discriminator,           #model
-                    dataloader_style, dataloader_content,                   #dataloader
-                    optimizer_feaExa_style,                                 #optimizer
-                    loss_MSE, loss_BCE,                                     #loss function
-                    epoch):                                                 #others
+                    model_feaExa_style, swin_unet, discriminator,FeatureExtractor,          #model
+                    dataloader_style, dataloader_content,                                   #dataloader
+                    optimizer_feaExa_style,                                                 #optimizer
+                    loss_MSE, loss_BCE,                                                     #loss function
+                    epoch):                                                                 #others
     """
     :param config: configurations for training seting
     :param model_feaExa_style: style feature extraction model
     :param swin_unet: content feature extraction and image generator
     :param discriminator:  discriminator for real and fake image
+    :param FeatureExtractor: feature extractor from fake image and truth image, it is aiming to chanel wise fusion
     :param dataloader_style:  a dataloader for style
     :param dataloader_content:  a dataloader for content
     :param optimizer_feaExa_style:  optimizer for cluster and style feature extraction
@@ -111,6 +112,10 @@ def train_one_epoch(config,
             print("fake_image size = {}".format(fake_image.size()))
 
             #Discriminator
+            feature_fakeimg = FeatureExtractor(fake_image)
+            feature_truthimg = FeatureExtractor(data_s)
+            print("feature_fakeimg size = {} | feature_truthimg size = {}".format(feature_fakeimg.size(), feature_truthimg.ze()))
+
             size_real = data_s.size(0)
             size_fake = fake_image.size(0)
             labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
@@ -168,15 +173,18 @@ def main(config):
     #print("model arguments:\n",format(model_feaExa_style))
 
     #Discriminator
-    discriminator = build_model(config, "discriminator")
+    discriminator = build_model("discriminator")
+
+    #FeatureExtractor
+    FeatureExtractor = build_model("FeatureExtractor")
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
     train_one_epoch(config,
-                    model_feaExa_style, swin_unet, discriminator,                   #model
-                    dataloader_style, dataloader_content,                           #dataloader
-                    optimizer_feaExa_style,                                         #optimizer
-                    loss_MSE,  loss_BCE,                                            #loss function
-                    epoch = 1                                                       #others
+                    model_feaExa_style, swin_unet, discriminator,FeatureExtractor,            #model
+                    dataloader_style, dataloader_content,                                     #dataloader
+                    optimizer_feaExa_style,                                                   #optimizer
+                    loss_MSE,  loss_BCE,                                                      #loss function
+                    epoch = 1                                                                 #others
                     )
 
 if __name__ == '__main__':
