@@ -74,7 +74,6 @@ def train_one_epoch(config,
                     loss_MSE, loss_BCE,                                     #loss function
                     epoch):                                                 #others
     """
-
     :param config: configurations for training seting
     :param model_feaExa_style: style feature extraction model
     :param swin_unet: content feature extraction and image generator
@@ -114,17 +113,17 @@ def train_one_epoch(config,
             #Discriminator
             size_real = data_s.size(0)
             size_fake = fake_image.size(0)
-            label_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
-            label_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
+            labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
+            labels_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
 
-            # D_fake = discriminator(fake_image) #B * 1
-            # D_real = discriminator(data_s)
-            #
-            # errD_real = loss_BCE(data_s, real_label)
-            # errD_fake = loss_BCE(fake_image, fake_label)
+            D_fake = discriminator(fake_image) #B * 1
+            D_real = discriminator(data_s)
+            print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
+            errD_real = loss_BCE(D_real, labels_real)
+            errD_fake = loss_BCE(D_fake, labels_fake)
 
-            #print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
-            #                                                                     , i_s, len(dataloader_style), D_real, D_fake))
+            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
+                                                                                , i_s, len(dataloader_style), D_real, D_fake))
 
 
             break
