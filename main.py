@@ -114,21 +114,21 @@ def train_one_epoch(config,
             #Discriminator
             feature_fakeimg = FeatureExtractor(fake_image)
             feature_truthimg = FeatureExtractor(data_s)
-            print("feature_fakeimg size = {} | feature_truthimg size = {}".format(feature_fakeimg.size(), feature_truthimg.ze()))
+            print("feature_fakeimg size = {} | feature_truthimg size = {}".format(feature_fakeimg.size(), feature_truthimg.size()))
 
             size_real = data_s.size(0)
             size_fake = fake_image.size(0)
             labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
             labels_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
 
-            D_fake = discriminator(fake_image) #B * 1
-            D_real = discriminator(data_s)
-            print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
-            errD_real = loss_BCE(D_real, labels_real)
-            errD_fake = loss_BCE(D_fake, labels_fake)
-
-            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
-                                                                                , i_s, len(dataloader_style), D_real, D_fake))
+            # D_fake = discriminator(fake_image) #B * 1
+            # D_real = discriminator(data_s)
+            # print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
+            # errD_real = loss_BCE(D_real, labels_real)
+            # errD_fake = loss_BCE(D_fake, labels_fake)
+            #
+            # print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
+            #                                                                     , i_s, len(dataloader_style), D_real, D_fake))
 
 
             break
@@ -173,10 +173,10 @@ def main(config):
     #print("model arguments:\n",format(model_feaExa_style))
 
     #Discriminator
-    discriminator = build_model("discriminator")
+    discriminator = build_model(config, "discriminator")
 
     #FeatureExtractor
-    FeatureExtractor = build_model("FeatureExtractor")
+    FeatureExtractor = build_model(config, "FeatureExtractor")
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
     train_one_epoch(config,
