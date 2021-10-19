@@ -116,6 +116,16 @@ def train_one_epoch(config,
             feature_truthimg = FeatureExtractor(data_s)
             print("feature_fakeimg size = {} | feature_truthimg size = {}".format(feature_fakeimg.size(), feature_truthimg.ze()))
 
+            B = []
+            for i_f in range(feature_fakeimg.size()[0]):
+                B_f = []
+                B_f.append(feature_truthimg[i_f * 2])
+                B_f.append(feature_fakeimg[i_f])
+                B_f.append(feature_truthimg[i_f * 2 + 1])
+                T_B_f = torch.cat(B_f, 0)
+                B.append(T_B_f)
+            new_B = torch.stack(B, 0)
+            print("new_B.size() = {}".format(new_B.size()))
             size_real = data_s.size(0)
             size_fake = fake_image.size(0)
             label_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
