@@ -137,19 +137,20 @@ def train_one_epoch(config,
             new_truthimg = torch.stack(B_truth, 0)
 
             print("new_fakeimg size = {} | new_truthimg = {}".format(new_fakeimg.size(), new_truthimg.size()))
-            size_real = data_s.size(0)
-            size_fake = fake_image.size(0)
+            size_real = new_truthimg.size(0)
+            size_fake = new_fakeimg.size(0)
             labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
             labels_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
 
-            D_fake = discriminator(new_fakeimg) #B * 1
-            D_real = discriminator(new_truthimg)
+            D_fake = discriminator(new_fakeimg).view(-1)
+            D_real = discriminator(new_truthimg).view(-1)
             print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
             errD_real = loss_BCE(D_real, labels_real)
             errD_fake = loss_BCE(D_fake, labels_fake)
 
             print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
                                                                                 , i_s, len(dataloader_style), D_real, D_fake))
+            print("errD_real = {} | errD_fake = {}".format(errD_real, errD_fake))
 
 
             break
@@ -175,9 +176,9 @@ def main(config):
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
-    dataloader_style = torch.utils.data.DataLoader(dataset_style, batch_size=4,
+    dataloader_style = torch.utils.data.DataLoader(dataset_style, batch_size=16,
                                              shuffle=True, num_workers=0)
-    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=2,
+    dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=8,
                                              shuffle=True, num_workers=0)
     #Create the optimizer
     optimizer_feaExa_style = None

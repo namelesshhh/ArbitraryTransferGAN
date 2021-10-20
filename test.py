@@ -1,10 +1,7 @@
 # -*- coding:utf-8 -*-
 import torch
-t = torch.tensor([[[1, 2],[3, 4]],[[5, 6],[7, 8]]])
-
-print(t)
-t = t.flatten(start_dim=1)
-print(t)
-t = t.resize(*[2,2,2])
-
-print(t)
+size_real = 128
+real_label = 1
+labels_real = torch.full((size_real,), real_label, dtype=torch.float)
+labels_real = torch.squeeze(labels_real)
+print("labels_real.size() = {}".format(labels_real.size()))

@@ -46,11 +46,15 @@ class FeatureExtractor(nn.Module):
     def __init__(self):
         super(FeatureExtractor, self).__init__()
         self.main = nn.Sequential(
-            # input is (nc) x 64 x 64
+            # input is (nc) x 224 x 224
             nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf) x 32 x 32
+            # state size. (ndf) x 112 x 112
             nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 56 x 56
+            nn.Conv2d(ndf * 2, ndf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 2),
             nn.LeakyReLU(0.2, inplace=True),
         )
@@ -63,17 +67,18 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
-            # state size. (ndf*2 * 3) x 16 x 16
+            # state size. (ndf*2 * 3) x 28 x 28
             nn.Conv2d(ndf * 2 * 3, ndf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 4),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*4) x 8 x 8
+            # state size. (ndf*4) x 14 x 14
             nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 8),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*8) x 4 x 4
-            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+            # state size. (ndf*8) x 7 x 7
+            nn.Conv2d(ndf * 8, 1, 7, 1, 0, bias=False),
             nn.Sigmoid()
+            # state size. 1 * 1
         )
 
     def forward(self, input):
