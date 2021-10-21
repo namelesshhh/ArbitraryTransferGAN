@@ -5,3 +5,5 @@ real_label = 1
 labels_real = torch.full((size_real,), real_label, dtype=torch.float)
 labels_real = torch.squeeze(labels_real)
 print("labels_real.size() = {}".format(labels_real.size()))
+
+print(torch.cuda.is_available())

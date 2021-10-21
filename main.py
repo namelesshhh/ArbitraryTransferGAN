@@ -88,33 +88,39 @@ def train_one_epoch(config,
     :return: void
     """
     for i_c , data_c in enumerate(dataloader_content, 0):
-        data_c = data_c[0]
+        data_c = data_c[0].to(device)
         for i_s, data_s in enumerate(dataloader_style, 0):
+            #reset grad
+            FeatureExtractor.zero_grad()
+            discriminator.zero_grad()
+            
             data_s = data_s[0].to(device)
 
             #Style feature extract module
             common_feature = model_feaExa_style(data_s) # B L C
             common_feature_size = common_feature.size()
-            print("Before flatten common feature size:{}".format(common_feature.size()))
+    
             common_feature = torch.flatten(common_feature, start_dim=1) # B L*C
-            print("After flatten common feature size:{}".format(common_feature.size()))
+    
             label, Center = kmeans(common_feature, 6, 10)
 
             loss_classify = loss_MSE(common_feature, Center)
             loss_classify.backward()
-            print("loss_classify = {}".format(loss_classify))
+
 
             #Style feature active fusion module
             common_feature = common_feature.reshape(*common_feature_size)
 
             #Swin-Unet
             fake_image = swin_unet(data_c, common_feature)
-            print("fake_image size = {}".format(fake_image.size()))
-
-            #Discriminator
+            
+            #################################################################################
+            #For Discriminator aim to min(D(fake)), that's mean truth is truth, fake is fake
+            #################################################################################
+            
             feature_fakeimg = FeatureExtractor(fake_image)
             feature_truthimg = FeatureExtractor(data_s)
-            print("feature_fakeimg size = {} | feature_truthimg size = {}".format(feature_fakeimg.size(), feature_truthimg.size()))
+         
 
             B_fake = []
             for i_f in range(feature_fakeimg.size()[0]):
@@ -125,7 +131,7 @@ def train_one_epoch(config,
                 T_B_f = torch.cat(B_tmp, 0)
                 B_fake.append(T_B_f)
             new_fakeimg = torch.stack(B_fake, 0)
-
+            
             B_truth = []
             for i_t in range(feature_truthimg.size()[0] - 2):
                 B_tmp = []
@@ -141,18 +147,34 @@ def train_one_epoch(config,
             size_fake = new_fakeimg.size(0)
             labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
             labels_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
-
-            D_fake = discriminator(new_fakeimg).view(-1)
+            
+            
             D_real = discriminator(new_truthimg).view(-1)
-            print("D_fake size = {} | D_real size = {}".format(D_fake.size(), D_real.size()))
-            errD_real = loss_BCE(D_real, labels_real)
-            errD_fake = loss_BCE(D_fake, labels_fake)
-
-            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content)
-                                                                                , i_s, len(dataloader_style), D_real, D_fake))
+            errD_real = loss_BCE(D_real, labels_real) #real is real
+            errD_real.backward()
+            
+        
+            D_fake = discriminator(new_fakeimg.detach()).view(-1)
+            errD_fake = loss_BCE(D_fake, labels_fake) #fake is fake
+            errD_fake.backward(retain_graph = True)
+            
+            #################################################################
+            #But for Generator, aim to max(D(fake)), that's mean fake is truth
+            #################################################################
+            swin_unet.zero_grad()
+            model_feaExa_style.zero_grad()
+            
+            G_fake = discriminator(new_fakeimg).view(-1)
+            labels_fake.fill_(real_label)
+            errG = loss_BCE(G_fake, labels_fake) #Generator wish fake is real
+            errG.backward()
+            
+            
+            print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content), i_s, len(dataloader_style), D_real.mean().item(), D_fake.mean().item()))
+            
             print("errD_real = {} | errD_fake = {}".format(errD_real, errD_fake))
-
-
+            
+            
             break
         break
 
