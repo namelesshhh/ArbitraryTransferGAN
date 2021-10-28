@@ -2,6 +2,7 @@ import argparse
 from models.config import get_config
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from models.build_model import build_model
 from k_means_module.k_means import kmeans
 from models.active_feature_fusion import active_feature_fusion
@@ -61,18 +62,18 @@ def param_visual(model):
     """
     for name, parms in model.named_parameters():
         print('-->name:', name)
-        print('-->para:', parms)
+        #print('-->para:', parms)
         print('-->grad_requirs:', parms.requires_grad)
         print('-->grad_value:', parms.grad)
-        print("==="*10)
-
+        print("==="*20)
+        break
 
 def train_one_epoch(config,
-                    model_feaExa_style, swin_unet, discriminator,FeatureExtractor,          #model
-                    dataloader_style, dataloader_content,                                   #dataloader
-                    optimizer_feaExa_style,                                                 #optimizer
-                    loss_MSE, loss_BCE,                                                     #loss function
-                    epoch):                                                                 #others
+                    model_feaExa_style, swin_unet, discriminator,FeatureExtractor,                              #model
+                    dataloader_style, dataloader_content,                                                       #dataloader
+                    optim_feaExa_style, optim_swin_unet, optim_discriminator, optim_FeatureExtractor,       #optimizer
+                    loss_MSE, loss_BCE,                                                                         #loss function
+                    epoch):                                                                                     #others
     """
     :param config: configurations for training seting
     :param model_feaExa_style: style feature extraction model
@@ -82,6 +83,9 @@ def train_one_epoch(config,
     :param dataloader_style:  a dataloader for style
     :param dataloader_content:  a dataloader for content
     :param optimizer_feaExa_style:  optimizer for cluster and style feature extraction
+    :param optim_swin_unet: optimizer for swin_unet
+    :param optim_discriminator: optimizer for discriminator
+    :param optim_FeatureExtractor: optimizer for FeatureExtractor
     :param loss_MSE: well
     :param loss_BCE: well
     :param epoch: well
@@ -91,9 +95,9 @@ def train_one_epoch(config,
         data_c = data_c[0].to(device)
         for i_s, data_s in enumerate(dataloader_style, 0):
             #reset grad
-            FeatureExtractor.zero_grad()
             discriminator.zero_grad()
-            
+            model_feaExa_style.zero_grad()
+
             data_s = data_s[0].to(device)
 
             #Style feature extract module
@@ -105,7 +109,8 @@ def train_one_epoch(config,
             label, Center = kmeans(common_feature, 6, 10)
 
             loss_classify = loss_MSE(common_feature, Center)
-            loss_classify.backward()
+            loss_classify.backward(retain_graph = True)
+
 
 
             #Style feature active fusion module
@@ -113,14 +118,14 @@ def train_one_epoch(config,
 
             #Swin-Unet
             fake_image = swin_unet(data_c, common_feature)
-            
+
             #################################################################################
             #For Discriminator aim to min(D(fake)), that's mean truth is truth, fake is fake
             #################################################################################
             
             feature_fakeimg = FeatureExtractor(fake_image)
             feature_truthimg = FeatureExtractor(data_s)
-         
+
 
             B_fake = []
             for i_f in range(feature_fakeimg.size()[0]):
@@ -142,39 +147,42 @@ def train_one_epoch(config,
                 B_truth.append(T_B_t)
             new_truthimg = torch.stack(B_truth, 0)
 
-            print("new_fakeimg size = {} | new_truthimg = {}".format(new_fakeimg.size(), new_truthimg.size()))
             size_real = new_truthimg.size(0)
             size_fake = new_fakeimg.size(0)
             labels_real = torch.full((size_real,), real_label, dtype=torch.float, device=device)
             labels_fake = torch.full((size_fake,), fake_label, dtype=torch.float, device=device)
             
             
-            D_real = discriminator(new_truthimg).view(-1)
+            D_real = discriminator(new_truthimg.detach()).view(-1)
             errD_real = loss_BCE(D_real, labels_real) #real is real
             errD_real.backward()
-            
-        
+
             D_fake = discriminator(new_fakeimg.detach()).view(-1)
             errD_fake = loss_BCE(D_fake, labels_fake) #fake is fake
-            errD_fake.backward(retain_graph = True)
-            
-            #################################################################
+            errD_fake.backward()
+
+            optim_discriminator.step()
+            ##################################################################
             #But for Generator, aim to max(D(fake)), that's mean fake is truth
-            #################################################################
+            ##################################################################
+            FeatureExtractor.zero_grad()
             swin_unet.zero_grad()
-            model_feaExa_style.zero_grad()
-            
+
+
             G_fake = discriminator(new_fakeimg).view(-1)
             labels_fake.fill_(real_label)
             errG = loss_BCE(G_fake, labels_fake) #Generator wish fake is real
             errG.backward()
-            
-            
+
+            optim_FeatureExtractor.step()
+            optim_swin_unet.step()
+            optim_feaExa_style.step()
+
             print("epoch:{}/{} | iter_content: {}/{} | iter_style: {}/{} | D(real): {} | D(fake): {}".format(epoch, config.TRAIN.EPOCHS, i_c, len(dataloader_content), i_s, len(dataloader_style), D_real.mean().item(), D_fake.mean().item()))
-            
-            print("errD_real = {} | errD_fake = {}".format(errD_real, errD_fake))
-            
-            
+
+            print("loss_classify = {} | errD_real = {} | errD_fake = {} | errG = {}".format(loss_classify, errD_real, errD_fake, errG))
+
+
             break
         break
 
@@ -183,7 +191,9 @@ def main(config):
     import torchvision.datasets as dset
     import torchvision.transforms as transforms
     image_size = config.DATA.IMG_SIZE
-    dataset_style = dset.ImageFolder(root='data/crops',
+    index_data = 6
+    rootPath = '../TrainingData/crops' + str(index_data)
+    dataset_style = dset.ImageFolder(root=rootPath,
                                transform=transforms.Compose([
                                    transforms.Resize(image_size),
                                    transforms.CenterCrop(image_size),
@@ -191,7 +201,7 @@ def main(config):
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
 
-    dataset_content = dset.ImageFolder(root='data/WordImage',
+    dataset_content = dset.ImageFolder(root='../TrainingData/WordImage',
                                transform=transforms.Compose([
                                    transforms.Resize(image_size),
                                    transforms.CenterCrop(image_size),
@@ -202,8 +212,6 @@ def main(config):
                                              shuffle=True, num_workers=0)
     dataloader_content = torch.utils.data.DataLoader(dataset_content, batch_size=8,
                                              shuffle=True, num_workers=0)
-    #Create the optimizer
-    optimizer_feaExa_style = None
 
     #Create the Loss function
     loss_BCE = nn.BCELoss()
@@ -212,24 +220,45 @@ def main(config):
 
     #Create the model
     #feature extraction
-    model_feaExa_style = build_model(config, "swin")
-    swin_unet = build_model(config, "swin_unet")
+    model_feaExa_style = build_model(config, "swin").to(device)
+    swin_unet = build_model(config, "swin_unet").to(device)
     #print("model arguments:\n",format(model_feaExa_style))
 
     #Discriminator
-    discriminator = build_model(config, "discriminator")
+    discriminator = build_model(config, "discriminator").to(device)
 
     #FeatureExtractor
-    FeatureExtractor = build_model(config, "FeatureExtractor")
+    FeatureExtractor = build_model(config, "FeatureExtractor").to(device)
+
+    #Load Model param
+    model_feaExa_style.load_state_dict(torch.load('./param/model_feaExa_style.pkl'))
+    swin_unet.load_state_dict(torch.load('./param/swin_unet.pkl'))
+    discriminator.load_state_dict(torch.load('./param/discriminator.pkl'))
+    FeatureExtractor.load_state_dict(torch.load('./param/FeatureExtractor.pkl'))
+
+    #Create the optimizer
+    #Learning rate for optimizers
+    lr = 0.0002
+    optim_feaExa_style = optim.Adam(model_feaExa_style.parameters(), lr=lr, betas=(0.5, 0.999))
+    optim_swin_unet = optim.Adam(swin_unet.parameters(), lr=lr, betas=(0.5, 0.999))
+    optim_discriminator = optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
+    optim_FeatureExtractor = optim.Adam(FeatureExtractor.parameters(), lr=lr, betas=(0.5, 0.999))
+
 
     #for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
     train_one_epoch(config,
-                    model_feaExa_style, swin_unet, discriminator,FeatureExtractor,            #model
-                    dataloader_style, dataloader_content,                                     #dataloader
-                    optimizer_feaExa_style,                                                   #optimizer
-                    loss_MSE,  loss_BCE,                                                      #loss function
-                    epoch = 1                                                                 #others
+                    model_feaExa_style, swin_unet, discriminator, FeatureExtractor,                           #model
+                    dataloader_style, dataloader_content,                                                     #dataloader
+                    optim_feaExa_style,optim_swin_unet,optim_discriminator,optim_FeatureExtractor,            #optimizer
+                    loss_MSE,  loss_BCE,                                                                      #loss function
+                    epoch = 1                                                                                 #others
                     )
+
+    #Save Model
+    torch.save(model_feaExa_style.state_dict(), './param/model_feaExa_style.pkl')
+    torch.save(swin_unet.state_dict(), './param/swin_unet.pkl')
+    torch.save(discriminator.state_dict(), './param/discriminator.pkl')
+    torch.save(FeatureExtractor.state_dict(), './param/FeatureExtractor.pkl')
 
 if __name__ == '__main__':
     _, args = parse_option()
